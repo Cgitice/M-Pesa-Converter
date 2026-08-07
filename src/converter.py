@@ -1,10 +1,30 @@
 #!/usr/bin/env python3
+"""
+M-Pesa Statement Converter
+
+Converts Safaricom M-Pesa PDF statements into a structured Excel workbook,
+including transaction analysis and automatically generated pivot tables.
+
+Features
+--------
+- Supports password-protected PDFs
+- Extracts transaction history
+- Cleans and formats transaction data
+- Generates Excel reports with pivot tables
+- Automatically removes temporary unlocked PDFs
+
+Author: Caroline Mwende Gitice
+Version: 1.0.0
+"""
+
+# Standard Library
 import os
 import sys
 import re
 import locale
 from datetime import datetime
 
+# Third-party Libraries
 import numpy as np
 import pandas as pd
 import pdfplumber
@@ -19,11 +39,20 @@ try:
 except locale.Error:
     pass
 
+# Application Constants
+# =====================================================
+APP_NAME = "M-Pesa Statement Converter"
+VERSION = "1.0.0"
+OUTPUT_FILENAME = "mpesa_statement.xlsx"
+TEMP_UNLOCKED_PDF = "unlocked_mpesa.pdf"
 
 # ─────────────────────────────────────────────
 # PDF UNLOCK
 # ─────────────────────────────────────────────
 def unlock_pdf(input_path: str, output_path: str, password: str) -> str:
+    """
+    Unlocks a password-protected M-Pesa PDF and saves a temporary unlocked copy.
+    """
     try:
         with pikepdf.open(input_path, password=password) as pdf:
             pdf.save(output_path)
@@ -82,6 +111,10 @@ def _parse_date_series(series: pd.Series) -> pd.Series:
 
 
 def format_dates(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Parse transaction dates and create a Month column
+    used for pivot table aggregation.
+    """
     df = df.copy()
     df.columns = [c.strip() if isinstance(c, str) else c for c in df.columns]
     if 'Completion Time' in df.columns:
@@ -156,6 +189,10 @@ def coerce_money_columns(df: pd.DataFrame, min_fraction: float = 0.5):
 # PIVOT TABLE
 # ─────────────────────────────────────────────
 def create_pivot_table(df: pd.DataFrame, excel_writer: pd.ExcelWriter) -> None:
+    """
+    Generate a six-month financial summary pivot table
+    and write it to the Excel workbook with formatting.
+    """
     try:
         df = df.copy()
 
@@ -233,9 +270,9 @@ def create_pivot_table(df: pd.DataFrame, excel_writer: pd.ExcelWriter) -> None:
         }], index=['Average'])
 
         paid_mean = float(avg_row.at['Average', 'Paid In']) if 'Paid In' in avg_row.columns else 0.0
-        discount_70 = pd.DataFrame([{'Paid In': round(paid_mean * 0.70, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['70% of Average'])
-        discount_20 = pd.DataFrame([{'Paid In': round(paid_mean * 0.20, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['20% of Average'])
-        discount_25 = pd.DataFrame([{'Paid In': round(paid_mean * 0.25, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['25% of Average'])
+        discount_70 = pd.DataFrame([{'Paid In': round(paid_mean * 0.70, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['70% Discounting'])
+        discount_20 = pd.DataFrame([{'Paid In': round(paid_mean * 0.20, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['Profitability @ 20%'])
+        discount_25 = pd.DataFrame([{'Paid In': round(paid_mean * 0.25, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['Disposable Income @ 25%'])
 
         # Concat in final order
         pivot_final = pd.concat([pivot_main, grand_total, avg_row, discount_70, discount_20, discount_25])
@@ -274,7 +311,7 @@ def create_pivot_table(df: pd.DataFrame, excel_writer: pd.ExcelWriter) -> None:
         index_list = list(pivot_final.index)
         for i, idx_label in enumerate(index_list):
             excel_row = start_row + i
-            is_summary = idx_label in ('Grand Total', 'Average', '70% of Average', '20% of Average', '25% of Average')
+            is_summary = idx_label in ('Grand Total', 'Average', '70% of Average', 'Profitability @ 20%', 'Disposable Income @ 25%')
 
             # index cell (Months) — center aligned now
             if is_summary:
@@ -290,7 +327,7 @@ def create_pivot_table(df: pd.DataFrame, excel_writer: pd.ExcelWriter) -> None:
                     worksheet.write(excel_row, excel_col, '', blank_fmt)
                 else:
                     # For Average and discount rows: only Paid In has value
-                    if idx_label in ('Average', '70% of Average', '20% of Average', '25% of Average'):
+                    if idx_label in ('Average', '70% of Average', 'Profitability @ 20%', 'Disposable Income @ 25%'):
                         if col_name == 'Paid In':
                             # Average row bold; discounts non-bold (keep center alignment)
                             if idx_label == 'Average':
@@ -471,13 +508,7 @@ def filter_loans(df: pd.DataFrame, excel_writer: pd.ExcelWriter, money_cols: lis
             except Exception:
                 pass
 
-        # Always write companion sheet listing all loan companies for reference
-        try:
-            companies_df = pd.DataFrame({"Loan Companies": LOAN_COMPANIES})
-            companies_df.to_excel(excel_writer, sheet_name="Loan Companies", index=False)
-        except Exception:
-            # Non-fatal if writing the companion sheet fails
-            pass
+
 
     except Exception as e:
         messagebox.showwarning("Loan Filter Warning", f"Could not filter loans: {e}")
@@ -538,7 +569,10 @@ def main() -> None:
         sys.exit()
 
     folder = os.path.dirname(pdf_path)
-    excel_path = os.path.join(folder, "mpesa_statement.xlsx")
+
+# Use the PDF filename for the Excel output
+    base_name = os.path.splitext(os.path.basename(pdf_path))[0]
+    excel_path = os.path.join(folder, f"{base_name}.xlsx")
 
     unlocked_path = None
     try:
@@ -547,7 +581,7 @@ def main() -> None:
             password = simpledialog.askstring("PDF Password", "Enter the M-Pesa PDF password:", show='*')
             if not password:
                 sys.exit()
-            unlocked_path = os.path.join(folder, "unlocked_mpesa.pdf")
+            unlocked_path = os.path.join(folder, TEMP_UNLOCKED_PDF)
             pdf_to_use = unlock_pdf(pdf_path, unlocked_path, password)
         else:
             pdf_to_use = pdf_path
