@@ -261,18 +261,27 @@ def create_pivot_table(df: pd.DataFrame, excel_writer: pd.ExcelWriter) -> None:
             'Average of Balance': pivot_main['Average of Balance'].mean() if 'Average of Balance' in pivot_main.columns else np.nan,
         }], index=['Grand Total']).round(2)
 
-        # Average and discounts: ONLY fill Paid In column, leave others blank
+        # Average: Paid In mean
         avg_paid = pivot_main['Paid In'].mean() if 'Paid In' in pivot_main.columns else np.nan
         avg_row = pd.DataFrame([{
-            'Paid In':            round(avg_paid, 2),
+            'Paid In':            round(avg_paid, 2) if not pd.isna(avg_paid) else np.nan,
             'Withdrawn':          np.nan,
             'Average of Balance': np.nan,
         }], index=['Average'])
 
-        paid_mean = float(avg_row.at['Average', 'Paid In']) if 'Paid In' in avg_row.columns else 0.0
-        discount_70 = pd.DataFrame([{'Paid In': round(paid_mean * 0.70, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['70% Discounting'])
-        discount_20 = pd.DataFrame([{'Paid In': round(paid_mean * 0.20, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['Profitability @ 20%'])
-        discount_25 = pd.DataFrame([{'Paid In': round(paid_mean * 0.25, 2), 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['Disposable Income @ 25%'])
+        # Discounting chain (as requested):
+        # 70% Discounting = 70% of Average
+        # Profitability @ 20% = 20% of 70% Discounting
+        # Disposable Income @ 25% = 25% of Profitability @ 20%
+        paid_mean = float(avg_row.at['Average', 'Paid In']) if 'Paid In' in avg_row.columns and not pd.isna(avg_row.at['Average', 'Paid In']) else 0.0
+
+        discount70_val = round(paid_mean * 0.70, 2)
+        profitability20_val = round(discount70_val * 0.20, 2)
+        disposable25_val = round(profitability20_val * 0.25, 2)
+
+        discount_70 = pd.DataFrame([{'Paid In': discount70_val, 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['70% Discounting'])
+        discount_20 = pd.DataFrame([{'Paid In': profitability20_val, 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['Profitability @ 20%'])
+        discount_25 = pd.DataFrame([{'Paid In': disposable25_val, 'Withdrawn': np.nan, 'Average of Balance': np.nan}], index=['Disposable Income @ 25%'])
 
         # Concat in final order
         pivot_final = pd.concat([pivot_main, grand_total, avg_row, discount_70, discount_20, discount_25])
@@ -309,9 +318,12 @@ def create_pivot_table(df: pd.DataFrame, excel_writer: pd.ExcelWriter) -> None:
 
         # Rewrite every cell inside the highlighted area to guarantee uniform formatting
         index_list = list(pivot_final.index)
+        # summary labels to treat specially when formatting rows
+        summary_labels = ('Grand Total', 'Average', '70% Discounting', 'Profitability @ 20%', 'Disposable Income @ 25%')
+
         for i, idx_label in enumerate(index_list):
             excel_row = start_row + i
-            is_summary = idx_label in ('Grand Total', 'Average', '70% of Average', 'Profitability @ 20%', 'Disposable Income @ 25%')
+            is_summary = idx_label in summary_labels
 
             # index cell (Months) — center aligned now
             if is_summary:
@@ -327,7 +339,7 @@ def create_pivot_table(df: pd.DataFrame, excel_writer: pd.ExcelWriter) -> None:
                     worksheet.write(excel_row, excel_col, '', blank_fmt)
                 else:
                     # For Average and discount rows: only Paid In has value
-                    if idx_label in ('Average', '70% of Average', 'Profitability @ 20%', 'Disposable Income @ 25%'):
+                    if idx_label in ('Average', '70% Discounting', 'Profitability @ 20%', 'Disposable Income @ 25%'):
                         if col_name == 'Paid In':
                             # Average row bold; discounts non-bold (keep center alignment)
                             if idx_label == 'Average':

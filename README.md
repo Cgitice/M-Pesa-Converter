@@ -21,34 +21,15 @@ The project was developed to improve efficiency in credit analysis workflows.
 
 ---
 
-## Features
+## Key Features
 
-✔ Convert Safaricom M-Pesa PDF statements to Excel
-
-✔ Support both password-protected and non-password-protected PDF statements
-
-✔ Automatically extract transaction tables
-
-✔ Clean and standardize transaction data
-
-✔ Parse and format transaction dates
-
-✔ Detect and format monetary values
-
-✔ Generate six-month financial summary pivot tables
-
-✔ Calculate:
-
-- Average Monthly Paid In
-- 70% Discounting
-- Profitability @ 20%
-- Disposable Income @ 25%
-
-✔ Detect transactions from known Digital Credit Providers (DCPs)
-
-✔ Export professionally formatted Excel reports
-
-✔ Automatically delete temporary unlocked PDF files
+- 🔒 Supports password-protected PDFs
+- 📑 Extracts transaction history
+- 📅 Parses and formats dates
+- 💰 Formats monetary values
+- 📊 Generates six-month financial summaries
+- 🏦 Detects digital loan transactions
+- 📈 Creates professionally formatted Excel reports
 
 ---
 
