@@ -212,8 +212,6 @@ Potential enhancements include:
 
 **Caroline Mwende Gitice**
 
-Bachelor of Economics | Credit Risk Analyst | Data Analytics Enthusiast
-
 GitHub: *(https://github.com/Cgitice)*
 
 LinkedIn: *(www.linkedin.com/in/caroline-gitice)*
