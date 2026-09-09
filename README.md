@@ -1,6 +1,6 @@
 # 📄 M-Pesa Statement Converter
 
-A Python application that automates the conversion of Safaricom M-Pesa PDF statements into structured Excel reports for financial analysis and credit assessment.
+A Python automation tool that automates the conversion of Safaricom M-Pesa PDF statements into structured Excel reports for financial analysis and credit assessment.
 
 The application extracts transaction data from M-Pesa statements, cleans and formats the information, generates summary pivot tables, and identifies transactions related to digital lenders, significantly reducing manual processing time.
 
