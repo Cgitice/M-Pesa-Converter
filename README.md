@@ -176,12 +176,6 @@ _Add screenshot here_
 
 ---
 
-### Loan Transactions
-
-_Add screenshot here_
-
----
-
 ## Business Value
 
 This application automates a repetitive manual process commonly performed during credit assessment.
