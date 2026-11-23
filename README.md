@@ -58,6 +58,9 @@ Provides a six-month financial summary including:
 
 Lists transactions associated with registered Digital Credit Providers (DCPs) to support credit assessment.
 
+### 4. Overdrafts
+
+Lists transactions associated with overdraft credit facilities
 ---
 
 ## Technologies Used
