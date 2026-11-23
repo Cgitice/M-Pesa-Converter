@@ -161,18 +161,17 @@ The application will:
 
 ### Input PDF
 
-_Add screenshot here_
-
----
+![Input PDF](screenshots/input_pdf.png)
 
 ### Full Data Worksheet
 
-_Add screenshot here_
-
----
+![Full Data Worksheet](screenshots/output_excel.png)
 
 ### Pivot Table
 
+![Pivot Table](screenshots/pivot_table.png)
+
+### Loan Transactions
 _Add screenshot here_
 
 ---
